@@ -12,10 +12,15 @@ const registerUser = asyncHandler(async (req , res) => {
     // upload them on cloudinary , avatar
     // create user object,create entry in db
     // remove password and refresh token field from  response 
+    // check for user creation 
+    // return res
 
 
     const {fullName, email, userName, password} = req.body
-    console.log("email: ",email);
+    console.log("hello jee kaise ho saare" , req.body)
+    console.log("hello" , userName)
+    console.log(req.files);
+    console.log(req)
 
     // if(fullName === ""){
     //     throw new ApiError(400 , "fullname is required")
@@ -24,12 +29,12 @@ const registerUser = asyncHandler(async (req , res) => {
         [fullName, email,  userName, password].some((field) => 
         field?.trim() === "")
     ){
-        throw new ApiError(400, )
+        throw new ApiError(400,  "All fields are required")
     }
-    const existeduser = User.findOne({
+    const existeduser = await User.findOne({
         $or:[{userName},{email}]
     })
-    console.log(existeduser)
+    console.log("existed user : ",existeduser)
     if(existeduser){
         throw new ApiError(409 , "User with email or username already exists")
     }

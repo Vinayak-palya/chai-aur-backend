@@ -1,8 +1,8 @@
-import mongoose ,   {model, Schema} from "mongoose";
+import {model, Schema} from "mongoose";
 import jwt from "jsonwebtoken"
 import bcrypt from "bcrypt"
 const userSchema = new Schema({
-    username:{
+    userName:{
         type:String,
         required:true,
         unique:true,
@@ -28,12 +28,12 @@ const userSchema = new Schema({
         type:String,// cloudinary url
         required:true,
     },
-    coverimage:{
+    coverImage:{
         type:String
     },
     watchHistory:[
         {
-            type:Schema.Types.objectId,
+            type:Schema.Types.ObjectId,
             ref:"Video"
         }
     ],
@@ -64,7 +64,7 @@ userSchema.methods.generateAccessToken = function(){
         {
             _id:this._id,
             email:this.email,
-            username:this.username,
+            userName:this.userName,
             fullName:this.fullName
         },
         process.env.ACCESS_TOKEN_SECRET,
