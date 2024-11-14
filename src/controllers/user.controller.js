@@ -85,5 +85,54 @@ const registerUser = asyncHandler(async (req , res) => {
     )
 })
 
+const loginUser = asyncHandler(async (req , res) => {
+    /*
+    Todos for login of user are
+    1->taking the input from the user 
+    2->check for the minimum no of required fields those we cannot ommit
+    3->validation of user if already exist or not, 
+    if not then we have to to redirect it to create account page
+    4->if user already exist then we have to to generate access token as well 
+    as the refresh token for the user and the refresh token for the server as well 
+    5->if users details are according to those stored in the database then redirect it to 
+    home page 
+    6->from next time if the users refresh token is not expired then directly land  him to the to
+    the home page if refresh token is expired then ask fr login and then repeat 
+    the whole procedure again 
 
-export {registerUser}
+    */
+   /*
+   (according to the hitesh sir)
+   req-body // data
+   user//email
+    check for user
+    password
+    generate access and refresh token
+   */
+
+    const {email, username, password} = req.body;
+    if(!username || !email)
+    {
+        throw ApiError(400 , "username or email  is required")
+    }
+
+    const user  = user.findOne({
+        $or:[{username, email}]
+    })
+
+    if(!user)
+    {
+        throw new ApiError(404, "User not found");
+    }
+    const isPasswordValid = await user.isPasswordCorrect(password)
+        if(!user)
+            {
+                throw new ApiError(404, "User not found");
+            }
+    
+})
+
+export {
+    registerUser,
+    loginUser
+}
