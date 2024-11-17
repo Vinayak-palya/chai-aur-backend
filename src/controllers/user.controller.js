@@ -1,7 +1,7 @@
 import {asyncHandler} from "../utils/asyncHandler.js"
 import  {ApiError} from "../utils/ApiError.js"
 import {User} from "../models/user.models.js"
-import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js"
 import { Apiresponse } from "../utils/Apiresponse.js"
 import jwt from "jsonwebtoken"
 
@@ -258,7 +258,7 @@ const getCurrentUser = asyncHandler(async(req, res) => {
 
     return res
     .status(200)
-    .json(200, req.user, "current user fetched successfully")
+    .json(new Apiresponse(200, req.user, "current user fetched successfully"))
 })
 
 const updateAccountDetails = asyncHandler(async(req, res) => {
@@ -293,6 +293,13 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
         throw new ApiError(400, "avatar file is missing")
     }
     const avatar = await uploadOnCloudinary(avatarLocalPath)
+
+    // TODO:delete old image ->assignment
+
+    const oldAvatar = User.findById(req.user?._id).avatar.split('/');
+    const public_id = oldAvatar[oldAvatar.length -1]
+    const result = deleteFromCloudinary(public_id)
+    console.log(result);
 
     if(!avatar.url)
     {
