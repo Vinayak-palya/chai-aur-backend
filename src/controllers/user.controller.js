@@ -1,7 +1,7 @@
 import {asyncHandler} from "../utils/asyncHandler.js"
 import  {ApiError} from "../utils/ApiError.js"
 import {User} from "../models/user.models.js"
-import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js"
+import { uploadOnCloudinary, deleteFromCloudinary, createPublicId } from "../utils/cloudinary.js"
 import { Apiresponse } from "../utils/Apiresponse.js"
 import jwt from "jsonwebtoken"
 
@@ -296,8 +296,8 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
 
     // TODO:delete old image ->assignment
 
-    const oldAvatar = User.findById(req.user?._id).avatar.split('/');
-    const public_id = oldAvatar[oldAvatar.length -1]
+    const oldAvatar = User.findById(req.user?._id).avatar
+    const public_id = createPublicId(oldAvatar);
     const result = deleteFromCloudinary(public_id)
     console.log(result);
 

@@ -27,6 +27,12 @@ const uploadOnCloudinary = async (localFilePath) => {
     }
 }
 
+const createPublicId = async(cloudinaryLink) => {
+    const array = cloudinaryLink.split("/")
+    const public_id = array[array.length- 1]
+    return public_id
+}
+
 const deleteFromCloudinary = async (public_id) => {
     try {
         const result = await cloudinary.uploader.destroy(public_id)
@@ -40,5 +46,6 @@ const deleteFromCloudinary = async (public_id) => {
 
 export {
     uploadOnCloudinary,
-    deleteFromCloudinary
+    deleteFromCloudinary,
+    createPublicId
 }
