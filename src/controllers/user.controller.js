@@ -241,13 +241,13 @@ const changeCurrentPassword = asyncHandler(async(req, res) => {
 
     const user = await User.findById(req.user?._id)
 
-    const isPasswordCorrect = uesr.isPasswordCorrect(oldPassword)
+    const isPasswordCorrect = user.isPasswordCorrect(oldPassword)
     if(!isPasswordCorrect){
         throw new ApiError(400, "Invalid Password")
     }
 
     user.password = newPassword  // database is always in other continent
-    await uesr.save({validateBeforeSave: false})
+    await user.save({validateBeforeSave: false})
 
     return res
     .status(200)
@@ -350,6 +350,79 @@ const updateUserCoverImage = asyncHandler(async(req, res) => {
     .json(new Apiresponse(200, user,"Account coverImage updated successfully"))
 })
 
+const getUserChannelProfile = asyncHandler(async(req,res)=> {
+    const {userName} = req.params
+
+    if(!userName.trim())
+    {
+        throw new ApiError(400, "userName")
+    }
+    const channel = User.aggregate([
+        {
+            $match:{
+                userName:userName?.toLowerCase()
+            }
+        },
+        {
+            $lookup:{
+                from:"subscriptions",
+                localField:"_id",
+                foreignField:"channel",
+                as:"subscribers"
+            }
+        },
+        {
+            $lookup:{
+                from:"subscriptions",
+                localField:"_id",
+                foreignField:"subscriber",
+                as:"subscribedTo"
+            }
+        },
+        {
+            $addFields:{
+                subscriberCount:{
+                    $size:"$subscribers"
+                },
+                channelsSubscribedToCount:{
+                    $size:"$subscribedTo"
+                },
+                isSubscribed:{
+                    $cond:{
+                        if:{$in: [req.user?._id, "$subscribers.subscriber"]},
+                        then:true,
+                        else:false
+                    }
+                }
+            }
+        },
+        {
+            $project:{
+                fullName:1,
+                userName:1,
+                subscriberCount:1,
+                channelsSubscribedToCount:1,
+                avatar:1,
+                coverImage:1,
+                email:1
+            }
+        }
+    ])
+    console.log(channel)
+
+    if(!channel.length)
+    {
+        throw new ApiError(404, "channel does not exist")
+    }
+
+    return res
+    .status(200)
+    .json(
+        new Apiresponse(200, channel[0], "data fetched successfully")
+    )
+})
+
+
 export {
     registerUser,
     loginUser,
@@ -359,6 +432,7 @@ export {
     getCurrentUser,
     updateAccountDetails,
     updateUserAvatar,
-    updateUserCoverImage
+    updateUserCoverImage,
+    getUserChannelProfile
 
 }
