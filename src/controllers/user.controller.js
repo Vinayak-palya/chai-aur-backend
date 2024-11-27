@@ -355,16 +355,16 @@ const updateUserCoverImage = asyncHandler(async(req, res) => {
 })
 
 const getUserChannelProfile = asyncHandler(async(req,res)=> {
-    const {userName} = req.params
+    const {username} = req.params
 
-    if(!userName.trim())
+    if(!username.trim())
     {
-        throw new ApiError(400, "userName")
+        throw new ApiError(400, "username")
     }
     const channel = User.aggregate([
         {
             $match:{
-                userName:userName?.toLowerCase()
+                username:username?.toLowerCase()
             }
         },
         {
@@ -403,7 +403,7 @@ const getUserChannelProfile = asyncHandler(async(req,res)=> {
         {
             $project:{
                 fullName:1,
-                userName:1,
+                username:1,
                 subscriberCount:1,
                 channelsSubscribedToCount:1,
                 avatar:1,
@@ -450,7 +450,7 @@ const getWatchHistory = asyncHandler(async(req, res) => {
                                 {
                                     $project:{
                                         fullName:1,
-                                        uerName:1,
+                                        username:1,
                                         avatar:1
                                     }
                                 }
