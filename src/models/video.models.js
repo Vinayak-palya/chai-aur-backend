@@ -20,7 +20,7 @@ const videoSchema = new Schema({
 
     },
     durarion:{
-        type:Number,// cludinary url
+        type:Number,// cloudinary url
         required:true,
 
     },
