@@ -1,10 +1,10 @@
 import mongoose, {isValidObjectId} from "mongoose"
-import {Video} from "../models/video.model.js"
-import {User} from "../models/user.model.js"
+import {Video} from "../models/video.models.js"
+import {User} from "../models/user.models.js"
 import {ApiError} from "../utils/ApiError.js"
 import {Apiresponse} from "../utils/Apiresponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
-import {uploadOnCloudinary} from "../utils/cloudinary.js"
+import {createPublicId, deleteFromCloudinary, uploadOnCloudinary} from "../utils/cloudinary.js"
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -62,23 +62,178 @@ try {
 })
 
 const getVideoById = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
-    //TODO: get video by id
+    try {
+        const { videoId } = req.params
+        //TODO: get video by id
+        const video = await Video.findById(videoId)
+        if(!video)
+        {
+            throw new ApiError(404, "video not found")
+        }
+        return res
+        .status(200)
+        .json(new Apiresponse(200, video, "video fetched successfully"))
+    } catch (error) {
+        console.log(error)
+    }
+
 })
 
 const updateVideo = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
-    //TODO: update video details like title, description, thumbnail
+    const { videoId } = req.params;
 
+    // Ensure videoId is provided
+    if (!videoId) {
+        throw new ApiError(404, "Video not found");
+    }
+
+    // const prevThumbNail = await Video.findById(req.video?._id)?.thumbNail
+    // const public_id = createPublicId(prevThumbNail)
+    // const result = deleteFromCloudinary(public_id)
+    // console.log(result);
+    const prevThumbNail = asyncHandler(async (req, res) => {
+        try {
+            // Ensure video exists
+            const video = await Video.findById(req.video?._id);
+            if (!video) {
+                throw new ApiError(404, "Video not found");
+            }
+    
+            const prevThumbNail = video.thumbNail;
+    
+            if (prevThumbNail) {
+                const public_id = createPublicId(prevThumbNail);
+    
+                // Ensure deletion is awaited
+                const result = await deleteFromCloudinary(public_id);
+    
+                console.log("Cloudinary deletion result:", result);
+    
+                return result;
+            } else {
+                console.log("No thumbnail to delete.");
+                return null;
+            }
+        } catch (error) {
+            console.error("Error deleting previous thumbnail:", error);
+            throw error; // Rethrow for global error handler
+        }
+    });
+    
+    prevThumbNail();
+    
+    const { title, description } = req.body;
+    const thumbNailPath = req.files?.path; // Extract thumbNailPath directly
+
+    // Prepare update fields dynamically
+    const updateFields = {};
+
+    if (thumbNailPath) {
+        // Upload thumbnail to Cloudinary
+        const thumbNail = await uploadOnCloudinary(thumbNailPath);
+        if (thumbNail?.url) {
+            updateFields.thumbNail = thumbNail.url;
+        }
+    }
+
+    if (title) updateFields.title = title;
+    if (description) updateFields.description = description;
+
+    // Update the video
+    const video = await Video.findByIdAndUpdate(
+        videoId,
+        { $set: updateFields },
+        { new: true }
+    );
+
+    if (!video) {
+        throw new ApiError(404, "Video not found");
+    }
+
+    return res
+        .status(200)
+        .json(new Apiresponse(200, video, "Video updated successfully"));
 })
 
 const deleteVideo = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
-    //TODO: delete video
-})
+    const { videoId } = req.params;
+
+    // TODO: delete video
+    if (!videoId) {
+        throw new ApiError(404, "Video not found");
+    }
+
+    // Helper function to delete the video from Cloudinary
+    const deleteVideoFromCloudinary = asyncHandler(async (videoId) => {
+        try {
+            // Find the video document by ID
+            const video = await Video.findById(videoId);
+            if (!video) {
+                throw new ApiError(404, "Video not found");
+            }
+
+            const videoUrl = video.video; // Extract the video URL
+            if (!videoUrl) {
+                console.log("No video URL to delete.");
+                return null;
+            }
+
+            // Create the public ID and delete the video from Cloudinary
+            const publicId = createPublicId(videoUrl);
+            const result = await deleteFromCloudinary(publicId);
+
+            console.log("Cloudinary deletion result:", result);
+            return result;
+        } catch (error) {
+            console.error("Error deleting video from Cloudinary:", error);
+            throw error; // Rethrow for global error handling
+        }
+    });
+
+    // Delete video from Cloudinary
+    await deleteVideoFromCloudinary(videoId);
+
+    // Delete video from database
+    try {
+        const video = await Video.findByIdAndDelete(videoId);
+        if (video) {
+            console.log("Video deleted:", video);
+        } else {
+            console.log("No video found with the given video ID");
+        }
+    } catch (error) {
+        console.error("Error deleting video from database:", error);
+    }
+
+    // Send response
+    res.status(200).json(new Apiresponse(200, null, "Video deleted successfully"));
+});
+
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
     const { videoId } = req.params
+    try {
+        if(!videoId)
+        {
+            throw new ApiError(404, "video not found")
+        }
+        const video = await Video.findByIdAndUpdate(
+            videoId,
+            {
+                $set:{
+                    isPublished:!isPublished
+                }
+            },
+            {new:true}
+        )
+        return res
+        .status(200)
+        .json(new Apiresponse(200, "video ispublished status updated successfully"))
+    } catch (error) {
+        console.log(error)
+    }
+    
+    
 })
 
 export {

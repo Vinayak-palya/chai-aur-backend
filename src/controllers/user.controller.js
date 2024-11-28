@@ -299,7 +299,7 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
 
     // TODO:delete old image ->assignment
 
-    const oldAvatar = User.findById(req.user?._id).avatar
+    const oldAvatar = await User.findById(req.user?._id)?.avatar
     const public_id = createPublicId(oldAvatar);
     const result = deleteFromCloudinary(public_id)
     console.log(result);
