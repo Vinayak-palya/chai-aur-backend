@@ -179,7 +179,7 @@ const updateVideo = asyncHandler(async (req, res) => {
     prevThumbNail();
     
     const { title, description } = req.body;
-    const thumbNailPath = req.files?.path; // Extract thumbNailPath directly
+    const thumbNailPath = req.files?.thumbNail?.[0]?.path;; // Extract thumbNailPath directly
 
     // Prepare update fields dynamically
     const updateFields = {};
