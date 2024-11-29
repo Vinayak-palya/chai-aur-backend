@@ -8,8 +8,69 @@ import {createPublicId, deleteFromCloudinary, uploadOnCloudinary} from "../utils
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
-    //TODO: get all videos based on query, sort, pagination
+try {
+        const { page = 1, limit = 10, query ="", sortBy = "createdAt", sortType = 1, userId } = req.query
+        //TODO: get all videos based on query, sort, pagination
+        const pagenumber = parseInt(page) || 1
+        const limits = parseInt(limit) || 10
+    
+        const skip = (pagenumber - 1)*limits
+    
+        const idValidate = isValidObjectId(userId)
+        if(!idValidate)
+        {
+            throw new ApiError(400, "please provide a valid userId")
+        }
+        const videos = await Video.aggregate([
+            {
+                $match:{
+                    $or:[
+                        {
+                            title:{
+                                $regex:query,
+                                options:i
+                            }
+                        },
+                        {
+                            description:{
+                                $regex:query,
+                                options:i
+                            }
+                        },
+                    ]
+                }
+            },
+            {
+                $lookup:{
+                    from:"users",
+                    localField:"owner",
+                    foreignField:"_id",
+                    as:"channel"
+                }
+            },
+            {
+                $sort:{
+                    [sortBy]: sortType === '1' ? 1: -1
+                }
+            },
+            {
+                $skip:skip
+            },
+            {
+                $limit:limits
+            }
+        ])
+        if(!videos || videos.length === 0)
+        {
+            throw new ApiError(404, "no video found matching the  query")
+        }
+
+        return res
+        .status(200)
+        .json(new Apiresponse(200, videos, "video fetched successfully"))
+} catch (error) {
+    console.log(error)
+}
     
 })
 
@@ -23,7 +84,7 @@ try {
         const videoFilePath = req.files?.videoFile[0]?.path;
         const thumbNailPath = req.files?.thumbNail[0]?.path;
     
-        if(!videoFile || !thumbNail){
+        if(!videoFilePath || !thumbNailPath){
             throw new ApiError(404, "VideoFile or thumbNail is missing")
         }
     
@@ -101,19 +162,14 @@ const updateVideo = asyncHandler(async (req, res) => {
     
             const prevThumbNail = video.thumbNail;
     
-            if (prevThumbNail) {
+            
                 const public_id = createPublicId(prevThumbNail);
     
                 // Ensure deletion is awaited
                 const result = await deleteFromCloudinary(public_id);
-    
                 console.log("Cloudinary deletion result:", result);
-    
                 return result;
-            } else {
-                console.log("No thumbnail to delete.");
-                return null;
-            }
+
         } catch (error) {
             console.error("Error deleting previous thumbnail:", error);
             throw error; // Rethrow for global error handler
@@ -221,7 +277,7 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
             videoId,
             {
                 $set:{
-                    isPublished:!isPublished
+                    isPublished:!video.isPublished
                 }
             },
             {new:true}
